@@ -27,13 +27,12 @@ class GitUtilsTests {
   @Test
   void testGitCloneWithToken() {
 
-    String repoUrl = "https://github.com/project-au-lait/amv-test-repository.git";
+    String repoUrl = "https://github.com/ykuwahara/amv-test-repository.git";
     Path repoDir =
         GitUtils.gitClone(
             Path.of("target"),
             repoUrl,
-            // TODO: Consider how to encrypt and store the token.
-            "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",
+            "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",
             "ID_TEST");
 
     FileUtils4Test.deleteOnExit(repoDir);
