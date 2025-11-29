@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>amv-ts-extractor</artifactId>
+
+  <parent>
+    <groupId>dev.aulait.amv</groupId>
+    <artifactId>amv</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>../../</relativePath>
+  </parent>
+
+  <profiles>
+    <profile>
+      <id>setup</id>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>${exec-plugin-version}</version>
+            <configuration>
+              <executable>pnpm</executable>
+            </configuration>
+            <executions>
+              <execution>
+                <?m2e ignore?>
+                <id>pnpm-install</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <commandlineArgs>install</commandlineArgs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

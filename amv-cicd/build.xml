@@ -1,0 +1,93 @@
+<project xmlns:if="ant:if" xmlns:unless="ant:unless" name="amv-cicd" default="install">
+
+  <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+  <property name="prjdir" value="${basedir}/.." />
+
+  <condition property="mvn.cmd" value="${prjdir}/mvnw.cmd" else="${prjdir}/mvnw">
+    <os family="windows" />
+  </condition>
+
+
+  <target name="test">
+    <condition property="analyze.profile" value=",analyze" else="">
+      <equals arg1="${analyze}" arg2="true" />
+    </condition>
+
+    <exec executable="${mvn.cmd}" failonerror="true">
+      <arg line="build-helper:reserve-network-port" />
+    </exec>
+
+    <property file="${port.file}" />
+
+    <trycatch>
+      <try>
+        <exec executable="${mvn.cmd}" dir="${prjdir}" failonerror="true">
+          <arg line="-T 1C clean verify -P setup${analyze.profile}" />
+          <arg line="-D db.port=${db.port.random} -D backend.port=${backend.port.random}" />
+          <arg line="-D org.slf4j.simpleLogger.showThreadName=true" />
+        </exec>
+
+        <if>
+          <equals arg1="${analyze}" arg2="true" />
+          <then>
+            <exec executable="${mvn.cmd}" dir="${prjdir}" failonerror="true">
+              <arg line="sonar:sonar" />
+            </exec>
+          </then>
+        </if>
+
+        <if>
+          <equals arg1="${push-image}" arg2="true" />
+          <then>
+            <antcall target="push-image" />
+          </then>
+        </if>
+      </try>
+
+      <finally>
+        <if>
+          <not>
+            <equals arg1="${container.keep}" arg2="true" />
+          </not>
+          <then>
+            <exec executable="docker" dir="${prjdir}/amv-container" failonerror="true">
+              <arg line="compose down" />
+            </exec>
+          </then>
+        </if>
+      </finally>
+    </trycatch>
+  </target>
+
+
+  <target name="push-image">
+    <exec executable="docker" failonerror="true">
+      <arg line="login -u ${docker.username} -p ${docker.password}" />
+    </exec>
+
+    <exec executable="docker" failonerror="true">
+      <arg line="push ${container.image}" />
+    </exec>
+
+    <if>
+      <not>
+        <matches string="${project.version}" pattern="^.*-SNAPSHOT$" />
+      </not>
+      <then>
+        <property name="target-image"
+          value="${quarkus.container-image.group}/${quarkus.container-image.name}:${project.version}" />
+
+        <exec executable="docker" failonerror="true">
+          <arg line="tag ${container.image} " />
+          <arg line="${target-image}" />
+        </exec>
+
+        <exec executable="docker" failonerror="true">
+          <arg line="push ${target-image}" />
+        </exec>
+      </then>
+    </if>
+  </target>
+
+</project>

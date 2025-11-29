@@ -1,0 +1,146 @@
+<%
+function w(num) {
+  return " ".repeat(num);
+}
+
+function getImpDcl(type) {
+  const from = type === "frontend" ? "$lib/arch/api/Api": "@api/Api" ;
+  const model = `${entityNmPascal}Model`;
+  const idModel = compIdFields ? `, ${entityNmPascal}IdModel` : "";
+  return `import type { ${model}${idModel} } from "${from}";`;
+}
+
+function getImpDclIdType(type) {
+  const from = type === "frontend" ? "$lib/arch/api/Api": "@api/Api" ;
+  return compIdFields ? `import type { ${entityNmPascal}IdModel } from "${from}";` : "";
+}
+
+tscom = {
+  idType: compIdFields ? entityNmPascal + "IdModel" : (idField.javaType === "Integer" ? "number" : "string"),
+  idObj: compIdFields ? `id: {} as ${entityNmPascal}IdModel` : "",
+  impDclF:  getImpDcl("frontend"),
+  impDclE2e: getImpDcl("e2etest"),
+  impDclIdTypeF:  getImpDclIdType("frontend"),
+  impDclIdTypeE2e: getImpDclIdType("e2etest"),
+  idPath: compIdFields
+      ? compIdFields.map((compIdField) => `\${${entityNmCamel}.id.${compIdField.fieldName}}`).join("/")
+      : `\${${entityNmCamel}.${idField.fieldName}}`,
+
+  fieldToProp: function(field, num = 6) {
+    const fieldType = field.javaType;
+    const t = w(num);
+
+    const typeMap = {
+      'String': 'StringUtils.generateRandomString()',
+      'Integer': 'NumberUtils.generateRandomNumber()',
+      'java.time.LocalDate': 'DateUtils.generateRandomLocalDate()',
+      'java.time.LocalDateTime': 'DateUtils.generateRandomLocalDateTime()',
+      'Boolean': 'BooleanUtils.generateRandomBoolean()'
+    };
+    const generator = typeMap[fieldType];
+    if (!generator) {
+      console.log(`Skip to generate for field type: ${fieldType}`);
+      return;
+    }
+    return `${t}${field.fieldName}: ${generator}`;
+  },
+
+  fieldsToProps: function(fields, num = 6) {
+    return fields
+      .map((field) => this.fieldToProp(field, num))
+      .filter((property) => property)
+      .join(",\n");
+  },
+
+  dataType: function(javaType) {
+    const typeMap = {
+      'Integer': 'number',
+      'String': 'string',
+      'java.time.LocalDate': 'date',
+      'java.time.LocalDateTime': 'date',
+      'Boolean': 'boolean'
+    };
+    return typeMap[javaType] || 'string';
+  },
+
+  inputField: function(field, isId, isDisabled = false) {
+    const id = `id='${field.fieldName}'`;
+    const labelPlaceholder = `${field.fieldName} (placeholder)`;
+    const labelComment = `<!-- TODO: implement m.label_${entityNmCamel}_${field.fieldName}() and use it at (placeholder)-->`;
+    const label = `label="${labelPlaceholder}"`;
+
+    const bindValue = isId
+      ? `bind:value={${entityNmCamel}.id.${field.fieldName}}`
+      : `bind:value={${entityNmCamel}.${field.fieldName}}`;
+
+    const bindChecked = isId
+      ? `bind:checked={${entityNmCamel}.id.${field.fieldName}}`
+      : `bind:checked={${entityNmCamel}.${field.fieldName}}`;
+
+    const disabled = isDisabled ? `disabled={${isDisabled}}` : '';
+
+    switch (field.javaType) {
+      case 'Integer':
+        return `${labelComment}\n<InputField type='number' ${id} ${label} ${bindValue} ${disabled} />`;
+      case 'String':
+        if (field.stringLength && field.stringLength <= 128) {
+          return `${labelComment}\n<InputField ${id} ${label} ${bindValue} ${disabled} />`;
+        } else {
+          return `${labelComment}\n<TextArea ${id} ${label} ${bindValue} ${disabled} />`;
+        }
+      case 'java.time.LocalDate':
+        return `${labelComment}\n<InputField type='date' ${id} ${label} ${bindValue} ${disabled} />`;
+      case 'java.time.LocalDateTime':
+        return `${labelComment}\n<InputField type='datetime-local' ${id} ${label} ${bindValue} ${disabled} />`;
+      case 'Boolean':
+        return `${labelComment}\n<CheckBox ${id} ${label} ${bindChecked} ${disabled} />`;
+      default:
+        const multiple = field.multiple ? 'multiple' : '';
+        return `${labelComment}\n<SelectBox ${id} ${label} ${bindValue} options={[]} ${multiple} ${disabled} />`;
+    }
+  },
+
+  buildSaveApiCall: function(entityNmCamel, compIdFields) {
+    const updateParams = compIdFields
+      ? compIdFields.map((compIdField) => `${entityNmCamel}.id.${compIdField.fieldName}`).join(", ")
+      : `${entityNmCamel}.id`;
+  
+    const createCall = `api.${entityNmCamel}.save(${entityNmCamel})`;
+    const updateCall = `api.${entityNmCamel}.update(${updateParams}, ${entityNmCamel})`;
+  
+    return `updateMode ? ${updateCall} : ${createCall}`;
+  },
+
+  buildDetailApiCall: function(entityNmCamel, compIdFields) {
+    const convertParam = (field) => {
+      if (field.javaType === "Integer") {
+        return `Number(params.${field.fieldName})`;
+      } else if (field.javaType === "Boolean") {
+        return `params.${field.fieldName} === 'true'`;
+      } else {
+        return `params.${field.fieldName}`;
+      }
+    };
+  
+    const apiCallArgs = (compIdFields ?? [idField]).map(convertParam).join(", ");
+  
+    return `api.${entityNmCamel}.get(${apiCallArgs})`;
+  },
+  
+  buildDeleteApiCall: function(entityNmCamel, compIdFields) {
+    const deleteParams = compIdFields
+      ? compIdFields.map((compIdField) => `${entityNmCamel}.id.${compIdField.fieldName}`).join(", ")
+      : `${entityNmCamel}.id`;
+  
+    return `api.${entityNmCamel}.delete(${deleteParams}, ${entityNmCamel})`;
+  },
+
+  buildAddColumn: function(field) {  
+    return `.add("${field.fieldName} (placeholder)", '${entityNmFirstLetter}.${field.fieldName}', (${entityNmCamel}) => ${entityNmCamel}.${field.fieldName}) // TODO: implement m.label_${entityNmCamel}_${field.fieldName}() and use it at (placeholder)`;
+  }
+}
+
+tscom.idProperty = compIdFields
+      ? `id: {\n${tscom.fieldsToProps(compIdFields, 8)}\n${w(6)}},`
+      : "";
+%>

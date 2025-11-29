@@ -1,0 +1,13 @@
+{
+  "build": {
+    "includedProjects": [
+      "amv-backend",
+      "amv-entity",
+      "extractor/amv-java-adjuster",
+      "extractor/amv-java-extractor",
+      "extractor/amv-mybatis-extractor"
+    ],
+    "compileTests": true,
+    "args": "-D quarkus.build.skip=true"
+  }
+}

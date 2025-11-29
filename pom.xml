@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <!-- The Basics -->
+  <groupId>dev.aulait.amv</groupId>
+  <artifactId>amv</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <parent.basedir>${project.basedir}</parent.basedir>
+    <backend.port>8081</backend.port>
+    <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
+
+    <container.image>
+      ${quarkus.container-image.group}/${quarkus.container-image.name}:${quarkus.container-image.tag}
+    </container.image>
+
+    <db.jdbc.groupId>com.h2database</db.jdbc.groupId>
+    <db.jdbc.artifactId>h2</db.jdbc.artifactId>
+    <db.jdbc.version>2.3.232</db.jdbc.version>
+    <db.jdbc.url>
+      jdbc:h2:${db.basedir}/amv-home/h2db/${db.name};AUTO_SERVER=TRUE;AUTO_SERVER_PORT=${db.port};CASE_INSENSITIVE_IDENTIFIERS=TRUE;MODE=PostgreSQL</db.jdbc.url>
+    <db.host>localhost</db.host>
+    <db.kind>h2</db.kind>
+    <db.name>amv</db.name>
+    <db.password>amv</db.password>
+    <db.port>9090</db.port>
+    <db.schema>PUBLIC</db.schema>
+    <db.username>amv</db.username>
+    <exec-plugin-version>3.2.0</exec-plugin-version>
+
+    <jackson.version>2.17.1</jackson.version>
+
+    <javaparser.version>3.27.1</javaparser.version>
+
+    <lombok.version>1.18.40</lombok.version>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
+
+    <quarkus.container-image.group>projectaulait</quarkus.container-image.group>
+    <quarkus.container-image.name>amv</quarkus.container-image.name>
+    <quarkus.container-image.tag>latest</quarkus.container-image.tag>
+
+    <surefire-plugin.version>3.2.5</surefire-plugin.version>
+    <sonar.coverage.exclusions>amv-e2etest/**,amv-generator/**</sonar.coverage.exclusions>
+  </properties>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>3.1.0</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.ant</groupId>
+              <artifactId>ant</artifactId>
+              <version>1.10.15</version>
+            </dependency>
+            <dependency>
+              <groupId>ant-contrib</groupId>
+              <artifactId>ant-contrib</artifactId>
+              <version>1.0b3</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>properties-maven-plugin</artifactId>
+          <version>${properties-maven-plugin.version}</version>
+          <configuration>
+            <files>
+              <file>
+                ${parent.basedir}/amv-migration/src/local/resources/flyway.properties
+              </file>
+            </files>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>use-env-backend-port-if-defined</id>
+      <activation>
+        <property>
+          <name>env.BACKEND_PORT</name>
+        </property>
+      </activation>
+      <properties>
+        <backend.port>${env.BACKEND_PORT}</backend.port>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>use-env-db-port-if-defined</id>
+      <activation>
+        <property>
+          <name>env.DB_PORT</name>
+        </property>
+      </activation>
+      <properties>
+        <db.port>${env.DB_PORT}</db.port>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>postgres</id>
+
+      <activation>
+        <property>
+          <name>env.AMV_DB</name>
+          <value>postgres</value>
+        </property>
+      </activation>
+
+      <properties>
+        <db.jdbc.groupId>org.postgresql</db.jdbc.groupId>
+        <db.jdbc.artifactId>postgresql</db.jdbc.artifactId>
+        <db.jdbc.driver>org.postgresql.Driver</db.jdbc.driver>
+        <db.jdbc.version>42.2.18</db.jdbc.version>
+        <db.jdbc.url>jdbc:postgresql://${db.host}:${db.port}/${db.name}?currentSchema=${db.schema}</db.jdbc.url>
+        <db.kind>postgresql</db.kind>
+        <db.port>5430</db.port>
+        <db.schema>amv</db.schema>
+      </properties>
+    </profile>
+  </profiles>
+
+  <modules>
+    <module>amv-backend</module>
+    <module>amv-cicd</module>
+    <module>amv-container</module>
+    <module>amv-doc</module>
+    <module>amv-e2etest</module>
+    <module>amv-entity</module>
+    <module>amv-frontend</module>
+    <module>amv-generator</module>
+    <module>amv-migration</module>
+    <module>extractor/amv-java-adjuster</module>
+    <module>extractor/amv-java-extractor</module>
+    <module>extractor/amv-mybatis-extractor</module>
+  </modules>
+</project>

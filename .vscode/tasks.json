@@ -1,0 +1,125 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start-db",
+      "type": "shell",
+      "osx": {
+        "command": "./mvnw"
+      },
+      "windows": {
+        "command": ".\\mvnw"
+      },
+      "linux": {
+        "command": "./mvnw"
+      },
+      "args": ["-f", "amv-container", "compile"],
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "start-backend",
+      "type": "shell",
+      "osx": {
+        "command": "./mvnw"
+      },
+      "windows": {
+        "command": ".\\mvnw"
+      },
+      "linux": {
+        "command": "./mvnw"
+      },
+      "args": ["-f", "amv-backend", "quarkus:dev"],
+      "problemMatcher": []
+    },
+    {
+      "label": "gen-doc",
+      "type": "shell",
+      "osx": {
+        "command": "./mvnw"
+      },
+      "windows": {
+        "command": ".\\mvnw"
+      },
+      "linux": {
+        "command": "./mvnw"
+      },
+      "args": ["-f", "amv-doc", "-P", "gen-doc"],
+      "problemMatcher": []
+    },
+    {
+      "label": "build-backend-image",
+      "type": "shell",
+      "osx": {
+        "command": "./mvnw"
+      },
+      "windows": {
+        "command": ".\\mvnw"
+      },
+      "linux": {
+        "command": "./mvnw"
+      },
+      "args": ["-f", "amv-backend", "package", "-P", "setup"],
+      "problemMatcher": []
+    },
+    {
+      "label": "start-frontend",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["dev", "--open"],
+      "options": { "cwd": "amv-frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "generate",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["generate"],
+      "options": { "cwd": "amv-generator" },
+      "problemMatcher": []
+    },
+    {
+      "label": "migrate-db",
+      "type": "shell",
+      "osx": {
+        "command": "./mvnw"
+      },
+      "windows": {
+        "command": ".\\mvnw"
+      },
+      "linux": {
+        "command": "./mvnw"
+      },
+      "args": ["-f", "amv-migration", "compile", "-P", "setup"],
+      "problemMatcher": []
+    },
+    {
+      "label": "dry-run",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["dry-run", "${input:spec.ts}"],
+      "options": { "cwd": "amv-e2etest" },
+      "problemMatcher": []
+    },
+    {
+      "label": "show-e2etest-report",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["playwright", "show-report"],
+      "options": { "cwd": "amv-e2etest" },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "spec.ts",
+      "type": "promptString",
+      "description": "Enter spec.ts file for dry-run",
+      "default": ""
+    }
+  ]
+}

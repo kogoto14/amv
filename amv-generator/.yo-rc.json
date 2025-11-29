@@ -1,0 +1,14 @@
+{
+  "generator-amv-generator": {
+    "metadataFilePath": "src/main/resources/jeg-metadata.json",
+    "destBackPath": "../amv-backend/src/main/java",
+    "destITPath": "../amv-backend/src/integration-test/java",
+    "destFrontPath": "../amv-frontend/src",
+    "destE2EPath": "../amv-e2etest/tests",
+    "templateType": "arch",
+    "genEntityCmd":"./mvnw -f amv-entity -P gen-entity",
+    "genOpenApiJsonCmd":"./mvnw -T 1C -pl amv-backend -am -P gen-openapi-spec package",
+    "frontApiClientPath": "../amv-frontend/src/lib/arch/api",
+    "E2EApiClientPath": "../amv-e2etest/tests/api"
+  }
+}

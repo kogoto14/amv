@@ -1,0 +1,28 @@
+schemaPattern: ${db.schema}
+packages:
+  ${project.groupId}.domain.project:
+    - codebase
+    - project
+    - source_file
+    - reference
+  ${project.groupId}.domain.process:
+    - type
+    - method
+    - method_param
+    - method_call
+    - field
+    - entry_point
+    - crud_point
+baseClassDefs:
+  - tables:
+      - "*"
+    baseClass: ${project.groupId}.arch.jpa.BaseEntity
+excludedColmuns:
+  - version
+  - created_by
+  - created_at
+  - updated_by
+  - updated_at
+excludedTables:
+  - flyway_schema_history
+formatter: google

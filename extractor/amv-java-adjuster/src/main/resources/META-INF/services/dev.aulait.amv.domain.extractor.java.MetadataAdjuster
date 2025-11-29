@@ -1,0 +1,4 @@
+dev.aulait.amv.domain.extractor.java.JaxRsAdjuster
+dev.aulait.amv.domain.extractor.java.JpaAdjuster
+dev.aulait.amv.domain.extractor.java.SpringDataJpaAdjuster
+dev.aulait.amv.domain.extractor.java.SpringMvcAdjuster

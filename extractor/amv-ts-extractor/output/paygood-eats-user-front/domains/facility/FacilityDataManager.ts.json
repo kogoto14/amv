@@ -1,0 +1,74 @@
+[
+  {
+    "package": "paygood-eats-user-front/domains/facility/FacilityDataManager.ts",
+    "name": "FacilityDataManager",
+    "heritage": {
+      "extends": null,
+      "implements": []
+    },
+    "constructors": [],
+    "properties": [
+      {
+        "name": "INSTANCE",
+        "type": "",
+        "isStatic": true,
+        "isReadonly": false,
+        "visibility": "private"
+      },
+      {
+        "name": "instance",
+        "type": "FacilityDataManager",
+        "isStatic": true,
+        "isReadonly": true,
+        "visibility": "public"
+      }
+    ],
+    "methods": [
+      {
+        "name": "setFacilityId",
+        "returnType": "void",
+        "isStatic": false,
+        "visibility": "public",
+        "params": [
+          {
+            "name": "facilityId",
+            "type": "",
+            "isOptional": false
+          }
+        ],
+        "methodCalls": [
+          {
+            "expression": "sessionStorageManager.set"
+          },
+          {
+            "expression": "sessionStorageManager.set"
+          }
+        ]
+      },
+      {
+        "name": "getFacilityId",
+        "returnType": "any",
+        "isStatic": false,
+        "visibility": "public",
+        "params": [],
+        "methodCalls": [
+          {
+            "expression": "sessionStorageManager.get"
+          }
+        ]
+      },
+      {
+        "name": "resetFacilityId",
+        "returnType": "void",
+        "isStatic": false,
+        "visibility": "public",
+        "params": [],
+        "methodCalls": [
+          {
+            "expression": "sessionStorageManager.remove"
+          }
+        ]
+      }
+    ]
+  }
+]

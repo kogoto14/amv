@@ -1,0 +1,33 @@
+services:
+  dbms:
+    image: postgres:16.1
+    environment:
+      TZ: ${OS_TIMEZONE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d postgres -U ${DB_USER}"]
+      interval: 1s
+      timeout: 10s
+      retries: 5
+    ports:
+      - ${DB_PORT}:5432
+  back:
+    image: ${BACK_IMAGE}
+    environment:
+      QUARKUS_DATASOURCE_USERNAME: ${DB_USER}
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      QUARKUS_DATASOURCE_JDBC_URL: ${DB_JDBC_URL}
+      QUARKUS_HTTP_PORT: ${BACKEND_PORT}
+      TZ: ${OS_TIMEZONE}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:${BACKEND_PORT}/q/health/ready"]
+      interval: 1s
+      timeout: 10s
+      retries: 15
+    ports:
+      - ${BACKEND_PORT}:${BACKEND_PORT}
+    volumes: 
+      - ${M2_REPO_DIR}:/home/jboss/.m2/repository
+      - ${GRADLE_CACHE_DIR}:/home/jboss/.gradle/caches
+      - ${AMV_MNT_DIR}:/mnt/amv

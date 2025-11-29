@@ -1,0 +1,35 @@
+
+
+database Remote <<Git>>
+note right of Remote : https://github.com/project-au-lait/amv.git
+
+folder "amv-mnt\lat ./amv-backend/target/amv-mnt" as "amv-mnt" {
+  database Mirror <<Git>>
+  note right of Mirror : ./amv.git
+}
+
+rectangle Container {
+
+  folder "amv-mnt\lat /mnt/amv/amv-mnt" as "amv-mnt-c" {
+    database Mirror as MirrorC <<Git>>
+    note right of MirrorC : ./amv.git
+  }
+
+  node Backend
+
+  folder "amv-home\lat /deployments/amv/amv-home" {
+    database Clone <<Git>>
+    note right of Clone : ./codebase/amv
+
+    database DB <<H2>>
+    note right of DB : ./h2db
+  }
+}
+
+Remote -- Mirror: git clone --mirror
+"amv-mnt" -- "amv-mnt-c": mount
+MirrorC -- Clone: git clone
+Backend -up- Clone: analyze
+Backend -- DB
+
+

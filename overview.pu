@@ -1,0 +1,16 @@
+@startuml overview
+
+actor User
+ 
+rectangle AMV {
+  component App
+  database "Internal\n    DB" as idb
+}
+ 
+database "Git" {
+  file "Source\n   File" as src
+}
+ 
+User -> App: operate\nwith browser
+App --> idb: save metadata
+App -> src: analyze syntax\n& extract metadata
