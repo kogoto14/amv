@@ -52,10 +52,9 @@ public class ClassDiagramLogic {
           .apply(extractTypeName(field.getType()))
           .ifPresent(
               fieldType -> {
-                String childDiagram = writeDiagramRecursive(fieldType, depth + 1, writtenTypes);
-                sb.append(childDiagram);
+                sb.append(writeDiagramRecursive(fieldType, depth + 1, writtenTypes));
 
-                if (!childDiagram.isEmpty()) {
+                if (writtenTypes.contains(fieldType.getQualifiedName())) {
                   sb.append(writeRelation(type, fieldType));
                 }
               });
