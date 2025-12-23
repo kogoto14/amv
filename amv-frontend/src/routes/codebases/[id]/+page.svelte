@@ -6,6 +6,7 @@
   import type { PageProps } from './$types';
   import { env } from '$env/dynamic/public';
   import StatusIcon from '$lib/components/StatusIcon.svelte';
+  import { m } from '$lib/paraglide/messages';
 
   let { data }: PageProps = $props();
   let codebase = $state(data.codebase);
@@ -76,14 +77,14 @@
 />
 
 {#snippet renderExtra()}
-  status
+  {m.status()}
   <ol>
-    <li><StatusIcon done={codebase.status.checkedOut} /> Checked Out</li>
-    <li><StatusIcon done={codebase.status.projectsLoaded} /> Projects Loaded</li>
-    <li><StatusIcon done={codebase.status.metadataExtracted} /> Metadata Extracted</li>
+    <li><StatusIcon done={codebase.status.checkedOut} /> {m.checkedOut()}</li>
+    <li><StatusIcon done={codebase.status.projectsLoaded} /> {m.projectsLoaded()}</li>
+    <li><StatusIcon done={codebase.status.metadataExtracted} /> {m.metadataExtracted()}</li>
   </ol>
 
-  projects
+  {m.projects()}
   <article>
     {#each codebase.projects as project, i}
       {#if i > 0},
@@ -94,4 +95,3 @@
     {/each}
   </article>
 {/snippet}
-

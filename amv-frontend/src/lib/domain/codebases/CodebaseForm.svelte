@@ -34,7 +34,6 @@
   };
 
   const form = FormValidator.createForm(spec, save, del, analyze);
-  
 
   async function save() {
     const response = await ApiHandler.handle<string>(fetch, (api) =>
@@ -62,15 +61,15 @@
 <form use:form>
   <div>
     <!-- TODO: implement m.label_codebase_url() and use it at (placeholder)-->
-    <TextArea id="url" label="Url" bind:value={codebase.url} required={true} />
+    <TextArea id="url" label={m.url()} bind:value={codebase.url} required={true} />
   </div>
   <div>
     <!-- TODO: implement m.label_codebase_name() and use it at (placeholder)-->
-    <InputField id="name" label="Name" bind:value={codebase.name} />
+    <InputField id="name" label={m.name()} bind:value={codebase.name} />
   </div>
   <div>
     <!-- TODO: implement m.label_codebase_token() and use it at (placeholder)-->
-    <InputField id="token" label="Token" bind:value={codebase.token} />
+    <InputField id="token" label={m.token()} bind:value={codebase.token} />
   </div>
   {#if renderExtra}
     {@render renderExtra()}

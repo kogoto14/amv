@@ -32,7 +32,7 @@
     <fieldset role="search">
       <!-- svelte-ignore a11y_autofocus -->
       <input id="search" type="search" bind:value={criteria.text} oninput={search} autofocus />
-      <input type="submit" value="Search" />
+      <input type="submit" value={m.search()} />
     </fieldset>
   </form>
 </section>

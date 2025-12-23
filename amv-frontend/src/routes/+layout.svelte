@@ -34,7 +34,7 @@
   const menuItems: MenuItem[] = [
     { id: 'top', name: 'Top', href: '/', icon: House },
     { id: 'type', name: 'Types', href: '/types', icon: FileType },
-    { id: 'call-tree', name: 'Call Tree', href: '/diagrams/call-tree', icon: ListTree },
+    { id: 'call-hierarchy', name: 'Call Hierarchy', href: '/diagrams/call-tree', icon: ListTree },
     {
       id: 'interaction',
       name: 'Interaction',

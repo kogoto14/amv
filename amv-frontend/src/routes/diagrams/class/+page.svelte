@@ -2,6 +2,7 @@
   import type { PageProps } from './$types';
   import { goto } from '$app/navigation';
   import CriteriaUtils from '$lib/arch/search/CriteriaUtils';
+  import { m } from '$lib/paraglide/messages';
 
   let { data }: PageProps = $props();
   let { criteria: _criteria } = $derived(data);
@@ -44,7 +45,9 @@
       {/each}
       {#if andMoreCount > 0}
         <div>
-          ...and {andMoreCount} more
+          {m.and}
+          {andMoreCount}
+          {m.more}
         </div>
       {/if}
     </ul>

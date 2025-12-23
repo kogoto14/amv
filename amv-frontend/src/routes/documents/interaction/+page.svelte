@@ -6,6 +6,7 @@
   import CheckboxGroup from '$lib/arch/form/CheckboxGroup.svelte';
   import type { CriteriaModel } from './+page';
   import InputField from '$lib/arch/form/InputField.svelte';
+  import * as m from '$lib/paraglide/messages';
 
   let { data }: PageProps = $props();
   let { criteria: _criteria, methods, doc } = $derived(data);
@@ -44,7 +45,9 @@
 
       {#if andMoreCount > 0}
         <li>
-          ... and {andMoreCount} more
+          {m.and}
+          {andMoreCount}
+          {m.more}
         </li>
       {/if}
     </ul>

@@ -11,6 +11,7 @@
   import StatusIcon from '$lib/components/StatusIcon.svelte';
   import DateUtils from '$lib/arch/util/DateUtils';
   import type { PageProps } from './$types';
+  import * as m from '$lib/paraglide/messages';
 
   let { data }: PageProps = $props();
   let { codebases } = $derived(data);
@@ -27,9 +28,12 @@
           <a href={`/codebases/${codebase.id}`}>{codebase.name}</a>
         </h5>
         <p class="status">
-          <span><StatusIcon done={!!codebase.status?.checkedOut} /> Checked Out</span>
-          <span><StatusIcon done={!!codebase.status?.projectsLoaded} /> Projects Loaded</span>
-          <span><StatusIcon done={!!codebase.status?.metadataExtracted} /> Metadata Extracted</span>
+          <span><StatusIcon done={!!codebase.status?.checkedOut} /> {m.checkedOut()}</span>
+          <span><StatusIcon done={!!codebase.status?.projectsLoaded} /> {m.projectsLoaded()}</span>
+          <span
+            ><StatusIcon done={!!codebase.status?.metadataExtracted} />
+            {m.metadataExtracted()}</span
+          >
         </p>
         <p>
           <span>
@@ -41,7 +45,7 @@
             {shortCommit(codebase.commitHash)}
           </span>
           <span title="2025/03/10 12:00:00">
-            <CalendarArrowDown /> 2 days ago
+            <CalendarArrowDown /> 3 days ago
           </span>
           <span>
             <Timer />
@@ -59,16 +63,16 @@
       </article>
     {/each}
     <article>
-      <h5><BookDown /> 新規登録</h5>
-      <p>AMVでソースコードを可視化するには、リポジトリをAMVに登録します。</p>
+      <h5><BookDown /> {m.register()}</h5>
+      <p>{m.registerDescription()}</p>
       <p>
-        <a id="addNewCodebase" href="/codebases/new"> 新しくリポジトリを登録する</a>
+        <a id="addNewCodebase" href="/codebases/new"> {m.registerNewRepository()}</a>
       </p>
-      <h5><BookDown /> デモ</h5>
-      <p>AMVの動作を確認したい場合は、AMV自体のリポジトリを登録します。</p>
+      <h5><BookDown /> {m.demo()}</h5>
+      <p>{m.demoDescription()}</p>
       <p>
         <a id="addAmvCodebase" href="/codebases/new?url=https://github.com/project-au-lait/amv.git">
-          AMVのリポジトリを登録する
+          {m.registerAmvRepository()}
         </a>
       </p>
     </article>
