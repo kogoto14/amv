@@ -4,8 +4,6 @@
   import FormValidator from '$lib/arch/form/FormValidator';
   import InputField from '$lib/arch/form/InputField.svelte';
   import TextArea from '$lib/arch/form/TextArea.svelte';
-  import SelectBox from '$lib/arch/form/SelectBox.svelte';
-  import CheckBox from '$lib/arch/form/CheckBox.svelte';
   import { messageStore } from '$lib/arch/global/MessageStore';
   import * as m from '$lib/paraglide/messages';
   import { string, date, boolean, number } from 'yup';
@@ -46,6 +44,8 @@
     }
   }
 
+  let showDeleteModal = $state(false);
+
   async function del() {
     const response = await ApiHandler.handle<string>(fetch, (api) =>
       api.codebases.delete(codebase.id, codebase)
@@ -78,19 +78,46 @@
     <div>
       <!--  TODO: fix SVQK also (function's name properties are not unique )-->
       <!-- <button type="submit" id="save" data-handler={save.name}> -->
-      <button type="submit" id="save" data-handler={save}>
-        {updateMode ? m.update() : m.register()}
-      </button>
+      <input
+        type="submit"
+        id="save"
+        value={updateMode ? m.update() : m.register()}
+        data-handler={save}
+      />
     </div>
     {#if updateMode}
       <div>
-        <button type="submit" id="analyze" data-handler={analyze}> 解析 </button>
+        <input type="submit" id="analyze" value={m.analyze()} data-handler={analyze} />
       </div>
       <div>
-        <button type="submit" id="del" data-handler={del}>
-          {m.delete()}
-        </button>
+        <input type="button" id="del" value={m.delete()} onclick={() => (showDeleteModal = true)} />
       </div>
     {/if}
   </div>
+  {#if showDeleteModal}
+    <dialog open>
+      <article>
+        <header>
+          <p>
+            <strong>{m.delete()} : {codebase.name}</strong>
+          </p>
+        </header>
+        <p>{m.deleteConfirmation()}</p>
+        <div class="grid">
+          <div>
+            <input
+              class="secondary"
+              type="button"
+              id="cancel"
+              value={m.cancel()}
+              onclick={() => (showDeleteModal = false)}
+            />
+          </div>
+          <div>
+            <input type="submit" id="delete-confirm" data-handler={del} value={m.delete()} />
+          </div>
+        </div>
+      </article>
+    </dialog>
+  {/if}
 </form>
