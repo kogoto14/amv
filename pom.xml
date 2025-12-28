@@ -149,6 +149,8 @@
     <module>amv-frontend</module>
     <module>amv-generator</module>
     <module>amv-migration</module>
+    <module>client/amv-client</module>
+    <module>client/amv-client-maven-plugin</module>
     <module>extractor/amv-java-adjuster</module>
     <module>extractor/amv-java-extractor</module>
     <module>extractor/amv-mybatis-extractor</module>
