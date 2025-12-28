@@ -87,7 +87,8 @@ EXPOSE $BACKEND_PORT
 USER root
 
 RUN mkdir -p /home/jboss/.m2 && chown 185 /home/jboss/.m2 \
-  && mkdir -p /mnt/amv && chown 185 /mnt/amv
+  && mkdir -p /mnt/amv && chown 185 /mnt/amv \
+  && mkdir -p /deployments/amv/codebase && chown 185 /deployments/amv && chown 185 /deployments/amv/codebase
 
 RUN microdnf install -y which git java-17-openjdk-devel java-11-openjdk graphviz && \
   microdnf clean all && \

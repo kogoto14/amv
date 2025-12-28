@@ -100,6 +100,11 @@ public class CodebaseService {
 
     CodebaseEntity codebase = find(id);
 
+    if (logic.isFilesystem(codebase)) {
+      log.info("Codebase {} is a directory, skipping git clone", codebase.getName());
+      return codebase;
+    }
+
     if (!logic.exists(codebase)) {
       if (StringUtils.isEmpty(codebase.getToken())) {
         GitUtils.gitClone(DirectoryManager.CODEBASE_ROOT, codebase.getUrl());

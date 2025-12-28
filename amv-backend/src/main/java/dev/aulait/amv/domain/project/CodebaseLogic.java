@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 @ApplicationScoped
 public class CodebaseLogic {
@@ -21,6 +22,9 @@ public class CodebaseLogic {
   @Setter private Function<CodebaseEntity, Boolean> projectStatusResolver;
 
   public Path dir(CodebaseEntity codebase) {
+    if (isFilesystem(codebase)) {
+      return DirectoryManager.CODEBASE_ROOT.resolve(codebase.getName());
+    }
     return GitUtils.extractRootDir(DirectoryManager.CODEBASE_ROOT, codebase.getUrl());
   }
 
@@ -30,6 +34,16 @@ public class CodebaseLogic {
 
   public boolean exists(CodebaseEntity codebase) {
     return dir(codebase).toFile().exists();
+  }
+
+  /**
+   * Check if the codebase is a filesystem (directory) type (not like Git repo).
+   *
+   * @param codebase the codebase entity to check
+   * @return true if the codebase is a filesystem type, false otherwise
+   */
+  public boolean isFilesystem(CodebaseEntity codebase) {
+    return StringUtils.isEmpty(codebase.getUrl());
   }
 
   public List<CodebaseAggregate> aggregate(List<ProjectEntity> projects) {
