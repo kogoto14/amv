@@ -32,6 +32,7 @@ public class CodebaseController {
 
   static final String CODEBASE_PATH = "codebases";
   static final String CODEBASE_ID_PATH = "{id}";
+  static final String CODEBASE_NAME_PATH = "by-name/{name}";
   static final String CODEBASE_SEARCH_PATH = "search";
   static final String LOAD_PATH = "load/{id}";
   static final String ALL_PATH = "all";
@@ -46,6 +47,13 @@ public class CodebaseController {
     CodebaseAggregate codebase = codebaseService.findWithProjects(id);
 
     return codebaseFactory.build(codebase);
+  }
+
+  @GET
+  @Path(CODEBASE_NAME_PATH)
+  @Parameters({@Parameter(name = "name", in = ParameterIn.PATH, required = true)})
+  public CodebaseDto getByName(@PathParam("name") String name) {
+    return codebaseService.findByNameWithProjects(name).map(codebaseFactory::build).orElse(null);
   }
 
   @POST

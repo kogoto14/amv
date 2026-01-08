@@ -14,6 +14,9 @@ interface CodebaseRepository extends JpaRepository<CodebaseEntity, String> {
   @Query(FIND_BY_ID_WITH_PROJECTS + " WHERE c.id = :id")
   List<CodebaseProjection> findWithProjectsById(@Param("id") String id);
 
+  @Query(FIND_BY_ID_WITH_PROJECTS + " WHERE c.name = :name")
+  List<CodebaseProjection> findWithProjectsByName(@Param("name") String name);
+
   @Query(FIND_BY_ID_WITH_PROJECTS)
   List<CodebaseProjection> findAllWithProjects();
 }

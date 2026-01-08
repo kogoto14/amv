@@ -18,6 +18,7 @@ import jakarta.transaction.Transactional;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +53,20 @@ public class CodebaseService {
 
     List<ProjectEntity> projects = projectService.findByCodebase(id);
     return logic.buildAggregate(codebase, projects);
+  }
+
+  public Optional<CodebaseAggregate> findByNameWithProjects(String name) {
+    List<CodebaseProjection> projections = codebaseRepository.findWithProjectsByName(name);
+
+    if (projections.isEmpty()) {
+      return Optional.empty();
+    }
+
+    CodebaseEntity codebase = projections.getFirst().getCodebase();
+    List<ProjectEntity> projects =
+        projections.stream().map(CodebaseProjection::getProject).filter(p -> p != null).toList();
+
+    return Optional.of(logic.buildAggregate(codebase, projects));
   }
 
   public List<CodebaseAggregate> findAllWithProjects() {
