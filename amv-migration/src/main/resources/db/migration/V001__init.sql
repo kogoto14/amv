@@ -107,7 +107,7 @@ CREATE TABLE flow_statement (
   parent_id CHAR(22) REFERENCES flow_statement ON DELETE CASCADE,
   type_id CHAR(22),
   method_seq_no INT,
-  kind CHAR(1),
+  kind CHAR(2),
   content TEXT,
   line_no INT,
   FOREIGN KEY (type_id, method_seq_no) REFERENCES method (type_id, seq_no) ON DELETE CASCADE,

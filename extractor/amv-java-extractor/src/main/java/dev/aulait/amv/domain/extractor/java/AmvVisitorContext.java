@@ -71,4 +71,15 @@ public class AmvVisitorContext {
   public FlowStatementFdo getCurrentFlowStatement() {
     return flowStatementStack.peek();
   }
+
+  public void registerFlowStatement(FlowStatementFdo flow) {
+    MethodFdo m = getCurrentMethod();
+    if (m == null) {
+      return;
+    }
+    if (m.getFlowStatements() == null) {
+      m.setFlowStatements(new ArrayList<>());
+    }
+    m.getFlowStatements().add(flow);
+  }
 }

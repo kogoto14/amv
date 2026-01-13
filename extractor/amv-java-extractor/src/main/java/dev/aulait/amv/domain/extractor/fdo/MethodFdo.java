@@ -18,4 +18,5 @@ public class MethodFdo {
   private List<AnnotationFdo> annotations = new ArrayList<>();
   private EntryPointFdo entryPoint;
   private List<CrudPointFdo> crudPoints = new ArrayList<>();
+  private List<FlowStatementFdo> flowStatements = new ArrayList<>();
 }

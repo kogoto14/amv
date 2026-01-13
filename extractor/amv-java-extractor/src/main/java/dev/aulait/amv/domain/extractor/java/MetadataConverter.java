@@ -9,9 +9,17 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.CatchClause;
+import com.github.javaparser.ast.stmt.ForEachStmt;
+import com.github.javaparser.ast.stmt.ForStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import dev.aulait.amv.domain.extractor.fdo.AnnotationFdo;
 import dev.aulait.amv.domain.extractor.fdo.FieldFdo;
@@ -165,8 +173,89 @@ public class MetadataConverter {
   public FlowStatementFdo convert(IfStmt n) {
     FlowStatementFdo fdo = new FlowStatementFdo();
     n.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
-    fdo.setKind("1");
+
+    boolean isElseIf =
+        n.getParentNode()
+            .filter(p -> p instanceof IfStmt)
+            .map(p -> (IfStmt) p)
+            .flatMap(IfStmt::getElseStmt)
+            .map(elseStmt -> elseStmt == n)
+            .orElse(false);
+
+    if (isElseIf) {
+      fdo.setKind(FlowStatementKind.ELSE_IF.code());
+    } else {
+      fdo.setKind(FlowStatementKind.IF.code());
+    }
+
     fdo.setContent(n.getCondition().toString());
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(Statement stmt) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    stmt.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    if (stmt instanceof BlockStmt) {
+      fdo.setKind(FlowStatementKind.ELSE.code());
+      fdo.setContent("else");
+    }
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(ForStmt f) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    f.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    fdo.setKind(FlowStatementKind.FOR.code());
+    String content = f.getCompare().map(Expression::toString).orElse("");
+
+    fdo.setContent(content);
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(ForEachStmt f) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    f.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    fdo.setKind(FlowStatementKind.FOR.code());
+
+    String content = f.getVariable().toString() + " : " + f.getIterable().toString();
+
+    fdo.setContent(content);
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(ReturnStmt n) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    n.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    fdo.setKind(FlowStatementKind.RETURN.code());
+
+    fdo.setContent(n.getExpression().map(Expression::toString).orElse("void"));
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(TryStmt n) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    n.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    fdo.setKind(FlowStatementKind.TRY.code());
+    fdo.setContent("try");
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(CatchClause n) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    n.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    fdo.setKind(FlowStatementKind.CATCH.code());
+
+    String exception = n.getParameter().toString();
+    fdo.setContent("catch (" + exception + ")");
+    return fdo;
+  }
+
+  public FlowStatementFdo convert(BlockStmt block) {
+    FlowStatementFdo fdo = new FlowStatementFdo();
+    block.getBegin().ifPresent(p -> fdo.setLineNo(p.line));
+    fdo.setKind(FlowStatementKind.FINALLY.code());
+
+    fdo.setContent("finally");
     return fdo;
   }
 }

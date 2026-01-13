@@ -18,8 +18,11 @@ public class SourceFileService {
   @Transactional
   public void save(SourceFileAggregate sourceFile) {
     em.persist(sourceFile.getSourceFile());
-
     sourceFile.getTypes().forEach(this::saveDeclaration);
+
+    if (sourceFile.getFlowStatements() != null) {
+      sourceFile.getFlowStatements().forEach(this::saveDeclaration);
+    }
   }
 
   @Transactional
@@ -47,7 +50,6 @@ public class SourceFileService {
         .sorted(Comparator.comparing(mc -> mc.getId().getSeqNo()))
         .forEach(
             mc -> {
-              saveDeclaration(mc.getFlowStatement());
               em.persist(mc);
             });
 
