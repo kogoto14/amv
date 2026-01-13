@@ -82,14 +82,20 @@ public class CodebaseService {
     if (StringUtils.isEmpty(entity.getName())) {
       entity.setName(GitUtils.extractRootDirName(entity.getUrl()));
     }
+    if (StringUtils.isEmpty(entity.getUrl())) {
+      entity.setUrl(Path.of("").toAbsolutePath().getParent().normalize().toUri().toString());
+    }
     entity.setToken(SecurityUtils.encrypt(entity.getToken()));
+
     return codebaseRepository.save(entity);
   }
 
   @Transactional
   public void delete(CodebaseEntity entity) {
     DirectoryManager.deleteExtractionDirs(entity.getName());
-    DirectoryManager.deleteCodebaseDir(entity.getName());
+    if (!logic.isFilesystem(entity)) {
+      DirectoryManager.deleteCodebaseDir(entity.getName());
+    }
 
     CodebaseEntity managedEntity = em.merge(entity);
     codebaseRepository.delete(managedEntity);

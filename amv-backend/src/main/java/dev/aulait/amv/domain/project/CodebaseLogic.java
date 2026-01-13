@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 
 @ApplicationScoped
 public class CodebaseLogic {
@@ -21,10 +20,18 @@ public class CodebaseLogic {
   /** in: codebase, out: projectsLoaded or not */
   @Setter private Function<CodebaseEntity, Boolean> projectStatusResolver;
 
+  private static final String FILE_URL_PREFIX = "file:";
+
   public Path dir(CodebaseEntity codebase) {
-    if (isFilesystem(codebase)) {
-      return DirectoryManager.CODEBASE_ROOT.resolve(codebase.getName());
+    String url = codebase.getUrl();
+    if (url != null && url.startsWith(FILE_URL_PREFIX)) {
+      try {
+        return Path.of(new java.net.URI(url));
+      } catch (java.net.URISyntaxException e) {
+        throw new IllegalArgumentException("Invalid file URL: " + url, e);
+      }
     }
+
     return GitUtils.extractRootDir(DirectoryManager.CODEBASE_ROOT, codebase.getUrl());
   }
 
@@ -43,7 +50,8 @@ public class CodebaseLogic {
    * @return true if the codebase is a filesystem type, false otherwise
    */
   public boolean isFilesystem(CodebaseEntity codebase) {
-    return StringUtils.isEmpty(codebase.getUrl());
+    String url = codebase.getUrl();
+    return url != null && url.startsWith(FILE_URL_PREFIX);
   }
 
   public List<CodebaseAggregate> aggregate(List<ProjectEntity> projects) {
