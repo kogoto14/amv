@@ -8,7 +8,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-@Mojo(name = "visualize")
+@Mojo(name = "visualize", aggregator = true)
 @Getter
 public class VisualizeMojo extends AbstractMojo {
 
