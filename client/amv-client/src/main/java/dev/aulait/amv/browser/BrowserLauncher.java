@@ -1,0 +1,62 @@
+package dev.aulait.amv.client.browser;
+
+import java.awt.Desktop;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Objects;
+
+public class BrowserLauncher {
+
+  private String browserUrl;
+
+  public BrowserLauncher(String browserUrl) {
+    this.browserUrl = Objects.requireNonNull(browserUrl, "browserUrl");
+  }
+
+  public void setBrowserUrl(String browserUrl) {
+    this.browserUrl = Objects.requireNonNull(browserUrl, "browserUrl");
+  }
+
+  public void open() {
+    if (isDevContainer()) {
+      exec("code", "--openExternal", browserUrl);
+      return;
+    }
+    try {
+      Desktop.getDesktop().browse(new URI(browserUrl));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  public boolean isDevContainer() {
+    return "true".equals(System.getenv("REMOTE_CONTAINERS"))
+        || "true".equals(System.getenv("CODESPACES"));
+  }
+
+  public int exec(String... command) {
+    ProcessBuilder processBuilder = new ProcessBuilder(command);
+
+    try {
+      Process process = processBuilder.start();
+
+      try (BufferedReader reader =
+          new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+        reader.lines().forEach(System.out::println);
+      }
+
+      return process.waitFor();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
+  }
+}
