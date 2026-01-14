@@ -11,10 +11,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import lombok.Setter;
 
 public class AmvClient {
+
+  private static final Duration ANALYSIS_TIMEOUT = Duration.ofMinutes(15);
+  private static final Duration ANALYSIS_POLL_INTERVAL = Duration.ofSeconds(3);
 
   private HttpClient client =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -22,6 +26,36 @@ public class AmvClient {
   @Setter private String apiBaseUrl = "http://localhost:8081";
 
   @Setter private String browserUrl = "http://localhost:5173";
+
+  private enum AnalysisStatus {
+    RUNNING,
+    COMPLETED,
+    FAILED,
+    UNKNOWN;
+
+    static AnalysisStatus from(String raw) {
+      if (raw == null || raw.isBlank()) {
+        return UNKNOWN;
+      }
+      try {
+        return AnalysisStatus.valueOf(raw.trim().toUpperCase());
+      } catch (IllegalArgumentException ex) {
+        return UNKNOWN;
+      }
+    }
+
+    boolean isRunning() {
+      return this == RUNNING;
+    }
+
+    boolean isSuccessful() {
+      return this == COMPLETED;
+    }
+
+    boolean isFailure() {
+      return this == FAILED || this == UNKNOWN;
+    }
+  }
 
   public static void main(String[] args) {
     AmvClient amvClient = new AmvClient();
@@ -62,7 +96,60 @@ public class AmvClient {
   }
 
   private String analyzeCodebase(String codebaseId) {
-    return post("codebases/analyze/" + codebaseId, "").body();
+    HttpResponse<String> response = post("codebases/analyze/" + codebaseId, "");
+    if (response.statusCode() >= 400) {
+      throw new IllegalStateException(
+          "Failed to start analysis: status="
+              + response.statusCode()
+              + ", body="
+              + response.body());
+    }
+
+    waitForAnalysisCompletion(codebaseId);
+    return response.body();
+  }
+
+  private void waitForAnalysisCompletion(String codebaseId) {
+    Instant deadline = Instant.now().plus(ANALYSIS_TIMEOUT);
+
+    while (Instant.now().isBefore(deadline)) {
+      HttpResponse<String> statusResponse = get("async/" + codebaseId);
+      int statusCode = statusResponse.statusCode();
+
+      if (statusCode == 200) {
+        AnalysisStatus status = AnalysisStatus.from(statusResponse.body());
+        if (status.isRunning()) {
+          sleepUntilNextPoll();
+          continue;
+        }
+        if (status.isSuccessful()) {
+          return;
+        }
+        if (status.isFailure()) {
+          throw new IllegalStateException(
+              "Codebase analysis failed: id=" + codebaseId + ", status=" + status);
+        }
+      } else if (statusCode != 404) {
+        throw new IllegalStateException(
+            "Unexpected async status response: status="
+                + statusCode
+                + ", body="
+                + statusResponse.body());
+      }
+      sleepUntilNextPoll();
+    }
+
+    throw new IllegalStateException(
+        "Timed out waiting for codebase analysis to finish: id=" + codebaseId);
+  }
+
+  private void sleepUntilNextPoll() {
+    try {
+      Thread.sleep(ANALYSIS_POLL_INTERVAL.toMillis());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted while waiting for analysis", e);
+    }
   }
 
   private boolean isNullLike(String s) {
