@@ -1,4 +1,4 @@
-package dev.aulait.amv.client.async;
+package dev.aulait.amv.async;
 
 public enum AsyncProcessStatus {
   RUNNING,

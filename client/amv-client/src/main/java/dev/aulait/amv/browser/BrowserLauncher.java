@@ -1,4 +1,4 @@
-package dev.aulait.amv.client.browser;
+package dev.aulait.amv.browser;
 
 import java.awt.Desktop;
 import java.io.BufferedReader;

@@ -1,60 +1,35 @@
 package dev.aulait.amv.client;
 
-import java.awt.Desktop;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
+import dev.aulait.amv.async.AsyncProcessMonitor;
+import dev.aulait.amv.browser.BrowserLauncher;
+import dev.aulait.amv.http.CodebaseRegistryClient;
 import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
-import lombok.Setter;
 
 public class AmvClient {
 
-  private static final Duration ANALYSIS_TIMEOUT = Duration.ofMinutes(15);
-  private static final Duration ANALYSIS_POLL_INTERVAL = Duration.ofSeconds(3);
+  private final AsyncProcessMonitor analysisMonitor;
+  private final CodebaseRegistryClient registryClient;
+  private final BrowserLauncher browserLauncher;
 
-  private HttpClient client =
-      HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+  private String apiBaseUrl = "http://localhost:8081";
 
-  @Setter private String apiBaseUrl = "http://localhost:8081";
+  private String browserUrl = "http://localhost:5173";
 
-  @Setter private String browserUrl = "http://localhost:5173";
+  public AmvClient() {
+    this.registryClient = new CodebaseRegistryClient(apiBaseUrl);
+    this.analysisMonitor = AsyncProcessMonitor.withDefaults(registryClient::fetchAnalysisStatus);
+    this.browserLauncher = new BrowserLauncher(browserUrl);
+  }
 
-  private enum AnalysisStatus {
-    RUNNING,
-    COMPLETED,
-    FAILED,
-    UNKNOWN;
+  public void setApiBaseUrl(String apiBaseUrl) {
+    this.apiBaseUrl = apiBaseUrl;
+    registryClient.setApiBaseUrl(apiBaseUrl);
+  }
 
-    static AnalysisStatus from(String raw) {
-      if (raw == null || raw.isBlank()) {
-        return UNKNOWN;
-      }
-      try {
-        return AnalysisStatus.valueOf(raw.trim().toUpperCase());
-      } catch (IllegalArgumentException ex) {
-        return UNKNOWN;
-      }
-    }
-
-    boolean isRunning() {
-      return this == RUNNING;
-    }
-
-    boolean isSuccessful() {
-      return this == COMPLETED;
-    }
-
-    boolean isFailure() {
-      return this == FAILED || this == UNKNOWN;
-    }
+  public void setBrowserUrl(String browserUrl) {
+    this.browserUrl = browserUrl;
+    browserLauncher.setBrowserUrl(browserUrl);
   }
 
   public static void main(String[] args) {
@@ -64,21 +39,25 @@ public class AmvClient {
   }
 
   public void visualize(String codebaseName, String qualifiedTypeName) {
-    findRegisteredCodebaseId(codebaseName)
-        .ifPresentOrElse(this::analyzeCodebase, () -> saveAndAnalyzeCodebase(codebaseName));
+    String codebaseId =
+        findRegisteredCodebaseId(codebaseName).orElseGet(() -> saveCodebase(codebaseName));
 
-    // open();
+    analyzeCodebase(codebaseId);
+
+    analysisMonitor.waitUntilCompleted(codebaseId);
+
+    // browserLauncher.open();;
   }
 
   private Optional<String> findRegisteredCodebaseId(String codebaseName) {
-    HttpResponse<String> response = get("codebases/by-name/" + codebaseName);
+    HttpResponse<String> response = registryClient.getCodebase(codebaseName);
     String body = response.body();
 
     if (response.statusCode() == 204 && isNullLike(body)) {
       return Optional.empty();
     }
 
-    if (response.statusCode() != 200) {
+    if (response.statusCode() > 400) {
       throw new IllegalStateException(
           "Unexpected response from server: status=" + response.statusCode() + ", body=" + body);
     }
@@ -86,69 +65,26 @@ public class AmvClient {
     return Optional.of(extractId(body));
   }
 
-  private String saveAndAnalyzeCodebase(String codebaseName) {
-    String codebaseId = saveCodebase(codebaseName);
-    return analyzeCodebase(codebaseId);
-  }
-
   private String saveCodebase(String codebaseName) {
-    return post("codebases", "{\"name\":\"" + codebaseName + "\"}").body();
-  }
-
-  private String analyzeCodebase(String codebaseId) {
-    HttpResponse<String> response = post("codebases/analyze/" + codebaseId, "");
-    if (response.statusCode() >= 400) {
+    HttpResponse<String> response = registryClient.saveCodebase(codebaseName);
+    if (response.statusCode() > 400) {
       throw new IllegalStateException(
-          "Failed to start analysis: status="
+          "Unexpected response from server: status="
               + response.statusCode()
               + ", body="
               + response.body());
     }
-
-    waitForAnalysisCompletion(codebaseId);
     return response.body();
   }
 
-  private void waitForAnalysisCompletion(String codebaseId) {
-    Instant deadline = Instant.now().plus(ANALYSIS_TIMEOUT);
-
-    while (Instant.now().isBefore(deadline)) {
-      HttpResponse<String> statusResponse = get("async/" + codebaseId);
-      int statusCode = statusResponse.statusCode();
-
-      if (statusCode == 200) {
-        AnalysisStatus status = AnalysisStatus.from(statusResponse.body());
-        if (status.isRunning()) {
-          sleepUntilNextPoll();
-          continue;
-        }
-        if (status.isSuccessful()) {
-          return;
-        }
-        if (status.isFailure()) {
-          throw new IllegalStateException(
-              "Codebase analysis failed: id=" + codebaseId + ", status=" + status);
-        }
-      } else if (statusCode != 404) {
-        throw new IllegalStateException(
-            "Unexpected async status response: status="
-                + statusCode
-                + ", body="
-                + statusResponse.body());
-      }
-      sleepUntilNextPoll();
-    }
-
-    throw new IllegalStateException(
-        "Timed out waiting for codebase analysis to finish: id=" + codebaseId);
-  }
-
-  private void sleepUntilNextPoll() {
-    try {
-      Thread.sleep(ANALYSIS_POLL_INTERVAL.toMillis());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while waiting for analysis", e);
+  private void analyzeCodebase(String codebaseId) {
+    HttpResponse<String> response = registryClient.analyzeCodebase(codebaseId);
+    if (response.statusCode() > 400) {
+      throw new IllegalStateException(
+          "Unexpected response from server: status="
+              + response.statusCode()
+              + ", body="
+              + response.body());
     }
   }
 
@@ -157,86 +93,11 @@ public class AmvClient {
   }
 
   private String extractId(String body) {
-    java.util.regex.Matcher m =
+    java.util.regex.Matcher matcher =
         java.util.regex.Pattern.compile("\"id\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
-    if (m.find()) {
-      return m.group(1);
+    if (matcher.find()) {
+      return matcher.group(1);
     }
     throw new IllegalStateException("codebase id not found in body: " + body);
-  }
-
-  private HttpResponse<String> get(String path) {
-    HttpRequest request = builer(path).GET().build();
-    return send(request);
-  }
-
-  private HttpResponse<String> post(String path, String body) {
-    HttpRequest request = builer(path).POST(HttpRequest.BodyPublishers.ofString(body)).build();
-    return send(request);
-  }
-
-  private HttpRequest.Builder builer(String path) {
-    return HttpRequest.newBuilder()
-        .uri(URI.create(apiBaseUrl + "/api/" + path))
-        .header("Content-Type", "application/json");
-  }
-
-  private HttpResponse<String> send(HttpRequest request) {
-    try {
-      System.out.println("AMV client: " + request.method() + " " + request.uri());
-      HttpResponse<String> resp = client.send(request, HttpResponse.BodyHandlers.ofString());
-      System.out.println(
-          "AMV client: response status="
-              + resp.statusCode()
-              + ", bodySnippet="
-              + (resp.body() == null
-                  ? "null"
-                  : resp.body().substring(0, Math.min(200, resp.body().length()))));
-      return resp;
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private void open() {
-    if (isDevContainer()) {
-      exec("code", "--openExternal", browserUrl);
-      return;
-    }
-    try {
-      Desktop.getDesktop().browse(new URI(browserUrl));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
-
-  private boolean isDevContainer() {
-    return "true".equals(System.getenv("REMOTE_CONTAINERS"))
-        || "true".equals(System.getenv("CODESPACES"));
-  }
-
-  private int exec(String... command) {
-    ProcessBuilder processBuilder = new ProcessBuilder(command);
-
-    try {
-      Process process = processBuilder.start();
-
-      try (BufferedReader reader =
-          new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-        reader.lines().forEach(System.out::println);
-      }
-
-      return process.waitFor();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException(e);
-    }
   }
 }

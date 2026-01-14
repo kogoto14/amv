@@ -1,4 +1,4 @@
-package dev.aulait.amv.client.http;
+package dev.aulait.amv.http;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
