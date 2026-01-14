@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Optional;
 import lombok.Setter;
 
 public class AmvClient {
@@ -18,7 +19,8 @@ public class AmvClient {
   private HttpClient client =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
-  @Setter private String baseUrl = "http://localhost:8081";
+  @Setter private String apiBaseUrl = "http://localhost:8081";
+
   @Setter private String browserUrl = "http://localhost:5173";
 
   public static void main(String[] args) {
@@ -27,26 +29,19 @@ public class AmvClient {
     System.out.println(response);
   }
 
-  public String saveCodebase(String codebaseName) {
-    return post("codebases", "{\"name\":\"" + codebaseName + "\"}").body();
-  }
-
-  public String analyzeCodebase(String codebaseId) {
-    return post("codebases/analyze/" + codebaseId, "").body();
-  }
-
-  public String saveAndAnalyzeCodebase(String codebaseName) {
-    String codebaseId = saveCodebase(codebaseName);
-    return analyzeCodebase(codebaseId);
-  }
-
   public void visualize(String codebaseName, String qualifiedTypeName) {
+    findRegisteredCodebaseId(codebaseName)
+        .ifPresentOrElse(this::analyzeCodebase, () -> saveAndAnalyzeCodebase(codebaseName));
+
+    // open();
+  }
+
+  private Optional<String> findRegisteredCodebaseId(String codebaseName) {
     HttpResponse<String> response = get("codebases/by-name/" + codebaseName);
     String body = response.body();
 
-    if (response.statusCode() == 404 || response.statusCode() == 204) {
-      saveAndAnalyzeCodebase(codebaseName);
-      return;
+    if (response.statusCode() == 204 && isNullLike(body)) {
+      return Optional.empty();
     }
 
     if (response.statusCode() != 200) {
@@ -54,30 +49,49 @@ public class AmvClient {
           "Unexpected response from server: status=" + response.statusCode() + ", body=" + body);
     }
 
-    if (isNullLike(body)) {
-      saveAndAnalyzeCodebase(codebaseName);
-    } else {
-      String id = extractId(body);
-      analyzeCodebase(id);
+    return Optional.of(extractId(body));
+  }
+
+  private String saveAndAnalyzeCodebase(String codebaseName) {
+    String codebaseId = saveCodebase(codebaseName);
+    return analyzeCodebase(codebaseId);
+  }
+
+  private String saveCodebase(String codebaseName) {
+    return post("codebases", "{\"name\":\"" + codebaseName + "\"}").body();
+  }
+
+  private String analyzeCodebase(String codebaseId) {
+    return post("codebases/analyze/" + codebaseId, "").body();
+  }
+
+  private boolean isNullLike(String s) {
+    return s == null || s.isBlank() || "null".equalsIgnoreCase(s.trim());
+  }
+
+  private String extractId(String body) {
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile("\"id\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
+    if (m.find()) {
+      return m.group(1);
     }
-
-    // open();
+    throw new IllegalStateException("codebase id not found in body: " + body);
   }
 
-  private HttpRequest.Builder builer(String path) {
-    return HttpRequest.newBuilder()
-        .uri(URI.create(baseUrl + "/api/" + path))
-        .header("Content-Type", "application/json");
-  }
-
-  public HttpResponse<String> get(String path) {
+  private HttpResponse<String> get(String path) {
     HttpRequest request = builer(path).GET().build();
     return send(request);
   }
 
-  public HttpResponse<String> post(String path, String body) {
+  private HttpResponse<String> post(String path, String body) {
     HttpRequest request = builer(path).POST(HttpRequest.BodyPublishers.ofString(body)).build();
     return send(request);
+  }
+
+  private HttpRequest.Builder builer(String path) {
+    return HttpRequest.newBuilder()
+        .uri(URI.create(apiBaseUrl + "/api/" + path))
+        .header("Content-Type", "application/json");
   }
 
   private HttpResponse<String> send(HttpRequest request) {
@@ -98,19 +112,6 @@ public class AmvClient {
       Thread.currentThread().interrupt();
       throw new IllegalStateException(e);
     }
-  }
-
-  private boolean isNullLike(String s) {
-    return s == null || s.isBlank() || "null".equalsIgnoreCase(s.trim());
-  }
-
-  private String extractId(String body) {
-    java.util.regex.Matcher m =
-        java.util.regex.Pattern.compile("\"id\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
-    if (m.find()) {
-      return m.group(1);
-    }
-    throw new IllegalStateException("codebase id not found in body: " + body);
   }
 
   private void open() {

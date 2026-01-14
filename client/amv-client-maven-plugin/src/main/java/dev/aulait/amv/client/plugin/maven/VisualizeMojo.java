@@ -12,8 +12,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 @Getter
 public class VisualizeMojo extends AbstractMojo {
 
-  @Parameter(property = "baseUrl")
-  private String baseUrl;
+  @Parameter(property = "apiBaseUrl")
+  private String apiBaseUrl;
 
   @Parameter(property = "browserUrl")
   private String browserUrl;
@@ -36,8 +36,8 @@ public class VisualizeMojo extends AbstractMojo {
 
     AmvClient client = new AmvClient();
 
-    if (baseUrl != null && !baseUrl.isEmpty()) {
-      client.setBaseUrl(baseUrl);
+    if (apiBaseUrl != null && !apiBaseUrl.isEmpty()) {
+      client.setApiBaseUrl(apiBaseUrl);
     }
 
     if (browserUrl != null && !browserUrl.isEmpty()) {
