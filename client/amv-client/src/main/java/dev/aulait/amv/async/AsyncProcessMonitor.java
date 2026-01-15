@@ -5,6 +5,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class AsyncProcessMonitor {
 
@@ -14,6 +16,8 @@ public class AsyncProcessMonitor {
   private final Duration timeout;
   private final Duration pollInterval;
   private final Function<String, HttpResponse<String>> statusFetcher;
+
+  private final Logger logger = Logger.getLogger(AsyncProcessMonitor.class.getName());
 
   private AsyncProcessMonitor(
       Duration timeout,
@@ -35,28 +39,26 @@ public class AsyncProcessMonitor {
     while (Instant.now().isBefore(deadline)) {
       HttpResponse<String> statusResponse = statusFetcher.apply(execId);
       int statusCode = statusResponse.statusCode();
+      AsyncProcessStatus status = AsyncProcessStatus.from(statusResponse.body());
 
-      if (statusCode == 200) {
-        AsyncProcessStatus status = AsyncProcessStatus.from(statusResponse.body());
-        if (status.isRunning()) {
-          System.out.println("Async process is still running...");
-          sleepUntilNextPoll();
-          continue;
-        }
-        if (status.isSuccessed()) {
-          System.out.println("Async process completed successfully.");
-          return;
-        }
-        if (status.isFailed()) {
-          throw new IllegalStateException(
-              "Async process failed: id=" + execId + ", status=" + status);
-        }
-      } else if (statusCode != 404) {
+      if (status.isRunning()) {
+        logger.log(
+            Level.INFO,
+            "Async process is still running: id={0}, status={1}",
+            new Object[] {execId, status});
+        sleepUntilNextPoll();
+        continue;
+      }
+      if (status.isSuccessed()) {
+        logger.log(
+            Level.INFO,
+            "Async process completed successfully: id={0}, status={1}",
+            new Object[] {execId, status});
+        return;
+      }
+      if (statusCode != 404 && status.isFailed()) {
         throw new IllegalStateException(
-            "Unexpected async status response: status="
-                + statusCode
-                + ", body="
-                + statusResponse.body());
+            "Async process failed: id=" + execId + ", status=" + status);
       }
 
       sleepUntilNextPoll();

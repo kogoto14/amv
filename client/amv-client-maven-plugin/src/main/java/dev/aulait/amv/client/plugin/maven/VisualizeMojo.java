@@ -12,17 +12,17 @@ import org.apache.maven.plugins.annotations.Parameter;
 @Getter
 public class VisualizeMojo extends AbstractMojo {
 
-  @Parameter(property = "apiBaseUrl")
-  private String apiBaseUrl;
-
-  @Parameter(property = "browserUrl")
-  private String browserUrl;
-
   @Parameter(property = "codebaseName", required = true)
   private String codebaseName;
 
   @Parameter(property = "qualifiedTypeName", required = true)
   private String qualifiedTypeName;
+
+  @Parameter(property = "apiBaseUrl")
+  private String apiBaseUrl;
+
+  @Parameter(property = "browserBaseUrl")
+  private String browserBaseUrl;
 
   @Override
   public void execute() throws MojoExecutionException, MojoFailureException {
@@ -34,14 +34,14 @@ public class VisualizeMojo extends AbstractMojo {
                 + ", qualifiedTypeName="
                 + qualifiedTypeName);
 
-    AmvClient client = new AmvClient();
+    AmvClient client = AmvClient.createDefault();
 
     if (apiBaseUrl != null && !apiBaseUrl.isEmpty()) {
       client.setApiBaseUrl(apiBaseUrl);
     }
 
-    if (browserUrl != null && !browserUrl.isEmpty()) {
-      client.setBrowserUrl(browserUrl);
+    if (browserBaseUrl != null && !browserBaseUrl.isEmpty()) {
+      client.setBrowserUrl(browserBaseUrl);
     }
 
     try {

@@ -11,20 +11,6 @@ import java.util.Objects;
 
 public class BrowserLauncher {
 
-  private String browserUrl;
-
-  public BrowserLauncher(String browserUrl) {
-    this.browserUrl = Objects.requireNonNull(browserUrl, "browserUrl");
-  }
-
-  public void setBrowserUrl(String browserUrl) {
-    this.browserUrl = Objects.requireNonNull(browserUrl, "browserUrl");
-  }
-
-  public void open() {
-    open(browserUrl);
-  }
-
   public void open(String url) {
     String targetUrl = Objects.requireNonNull(url, "url");
     if (isDevContainer()) {
@@ -40,12 +26,12 @@ public class BrowserLauncher {
     }
   }
 
-  public boolean isDevContainer() {
+  private boolean isDevContainer() {
     return "true".equals(System.getenv("REMOTE_CONTAINERS"))
         || "true".equals(System.getenv("CODESPACES"));
   }
 
-  public int exec(String... command) {
+  private int exec(String... command) {
     ProcessBuilder processBuilder = new ProcessBuilder(command);
 
     try {

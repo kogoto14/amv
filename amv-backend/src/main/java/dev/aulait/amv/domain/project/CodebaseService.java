@@ -92,8 +92,9 @@ public class CodebaseService {
 
   @Transactional
   public void delete(CodebaseEntity entity) {
-    DirectoryManager.deleteExtractionDirs(entity.getName());
     if (!logic.isFilesystem(entity)) {
+      // TODO: Ensure no garbage remains even in filesystem mode
+      DirectoryManager.deleteExtractionDirs(entity.getName());
       DirectoryManager.deleteCodebaseDir(entity.getName());
     }
 

@@ -9,9 +9,13 @@ public class URLBuilder {
       "(classDiagramCriteria:(depth:10,qualifiedSignature:%s),"
           + "pageControl:(pageNumber:1),typeSearchCriteria:(text:%s))";
 
-  private final String browserBaseUrl;
+  private String browserBaseUrl;
 
   public URLBuilder(String browserBaseUrl) {
+    this.browserBaseUrl = normalizeBaseUrl(browserBaseUrl);
+  }
+
+  public void setBrowserBaseUrl(String browserBaseUrl) {
     this.browserBaseUrl = normalizeBaseUrl(browserBaseUrl);
   }
 

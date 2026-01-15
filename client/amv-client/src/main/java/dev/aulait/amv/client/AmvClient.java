@@ -3,106 +3,76 @@ package dev.aulait.amv.client;
 import dev.aulait.amv.async.AsyncProcessMonitor;
 import dev.aulait.amv.browser.BrowserLauncher;
 import dev.aulait.amv.browser.URLBuilder;
-import dev.aulait.amv.http.CodebaseRegistryClient;
-import java.net.http.HttpResponse;
-import java.util.Optional;
+import dev.aulait.amv.http.CodebaseHttpClient;
+import java.util.Objects;
 
 public class AmvClient {
 
+  private static final String DEFAULT_API_BASE_URL = "http://localhost:8081";
+  private static final String DEFAULT_BROWSER_BASE_URL = "http://localhost:5173";
+
   private final AsyncProcessMonitor analysisMonitor;
-  private final CodebaseRegistryClient registryClient;
+  private final CodebaseHttpClient codebaseHttpClient;
   private final BrowserLauncher browserLauncher;
-  private URLBuilder urlBuilder;
+  private final URLBuilder urlBuilder;
 
-  private String apiBaseUrl = "http://localhost:8081";
+  public AmvClient(
+      CodebaseHttpClient codebaseHttpClient,
+      AsyncProcessMonitor analysisMonitor,
+      BrowserLauncher browserLauncher,
+      URLBuilder urlBuilder,
+      String apiBaseUrl,
+      String browserUrl) {
+    this.codebaseHttpClient = Objects.requireNonNull(codebaseHttpClient, "codebaseHttpClient");
+    this.analysisMonitor = Objects.requireNonNull(analysisMonitor, "analysisMonitor");
+    this.browserLauncher = Objects.requireNonNull(browserLauncher, "browserLauncher");
+    this.urlBuilder = Objects.requireNonNull(urlBuilder, "urlBuilder");
+    setApiBaseUrl(apiBaseUrl);
+    setBrowserUrl(browserUrl);
+  }
 
-  private String browserUrl = "http://localhost:5173";
-
-  public AmvClient() {
-    this.registryClient = new CodebaseRegistryClient(apiBaseUrl);
-    this.analysisMonitor = AsyncProcessMonitor.withDefaults(registryClient::fetchAnalysisStatus);
-    this.browserLauncher = new BrowserLauncher(browserUrl);
-    this.urlBuilder = new URLBuilder(browserUrl);
+  public static AmvClient createDefault() {
+    CodebaseHttpClient codebaseHttpClient = new CodebaseHttpClient(DEFAULT_API_BASE_URL);
+    AsyncProcessMonitor monitor =
+        AsyncProcessMonitor.withDefaults(codebaseHttpClient::fetchAnalysisStatus);
+    BrowserLauncher launcher = new BrowserLauncher();
+    URLBuilder builder = new URLBuilder(DEFAULT_BROWSER_BASE_URL);
+    return new AmvClient(
+        codebaseHttpClient,
+        monitor,
+        launcher,
+        builder,
+        DEFAULT_API_BASE_URL,
+        DEFAULT_BROWSER_BASE_URL);
   }
 
   public void setApiBaseUrl(String apiBaseUrl) {
-    this.apiBaseUrl = apiBaseUrl;
-    registryClient.setApiBaseUrl(apiBaseUrl);
+    String value = Objects.requireNonNull(apiBaseUrl, "apiBaseUrl");
+    codebaseHttpClient.setApiBaseUrl(value);
   }
 
   public void setBrowserUrl(String browserUrl) {
-    this.browserUrl = browserUrl;
-    browserLauncher.setBrowserUrl(browserUrl);
-    this.urlBuilder = new URLBuilder(browserUrl);
+    String value = Objects.requireNonNull(browserUrl, "browserUrl");
+    urlBuilder.setBrowserBaseUrl(value);
   }
 
   public static void main(String[] args) {
-    AmvClient amvClient = new AmvClient();
-    String response = amvClient.saveCodebase("MyCodebase");
+    AmvClient amvClient = AmvClient.createDefault();
+    String response = amvClient.codebaseHttpClient.saveCodebase("MyCodebase");
     System.out.println(response);
   }
 
   public void visualize(String codebaseName, String qualifiedTypeName) {
     String codebaseId =
-        findRegisteredCodebaseId(codebaseName).orElseGet(() -> saveCodebase(codebaseName));
+        codebaseHttpClient
+            .findRegisteredCodebaseId(codebaseName)
+            .orElseGet(() -> codebaseHttpClient.saveCodebase(codebaseName));
 
-    analyzeCodebase(codebaseId);
+    codebaseHttpClient.analyzeCodebase(codebaseId);
 
     analysisMonitor.waitUntilCompleted(codebaseId);
 
     String diagramUrl = urlBuilder.buildClassDiagramUrl(qualifiedTypeName);
     browserLauncher.open(diagramUrl);
-  }
-
-  private Optional<String> findRegisteredCodebaseId(String codebaseName) {
-    HttpResponse<String> response = registryClient.getCodebase(codebaseName);
-    String body = response.body();
-
-    if (response.statusCode() == 204 && isNullLike(body)) {
-      return Optional.empty();
-    }
-
-    if (response.statusCode() > 400) {
-      throw new IllegalStateException(
-          "Unexpected response from server: status=" + response.statusCode() + ", body=" + body);
-    }
-
-    return Optional.of(extractId(body));
-  }
-
-  private String saveCodebase(String codebaseName) {
-    HttpResponse<String> response = registryClient.saveCodebase(codebaseName);
-    if (response.statusCode() > 400) {
-      throw new IllegalStateException(
-          "Unexpected response from server: status="
-              + response.statusCode()
-              + ", body="
-              + response.body());
-    }
-    return response.body();
-  }
-
-  private void analyzeCodebase(String codebaseId) {
-    HttpResponse<String> response = registryClient.analyzeCodebase(codebaseId);
-    if (response.statusCode() > 400) {
-      throw new IllegalStateException(
-          "Unexpected response from server: status="
-              + response.statusCode()
-              + ", body="
-              + response.body());
-    }
-  }
-
-  private boolean isNullLike(String s) {
-    return s == null || s.isBlank() || "null".equalsIgnoreCase(s.trim());
-  }
-
-  private String extractId(String body) {
-    java.util.regex.Matcher matcher =
-        java.util.regex.Pattern.compile("\"id\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
-    if (matcher.find()) {
-      return matcher.group(1);
-    }
-    throw new IllegalStateException("codebase id not found in body: " + body);
   }
 }
