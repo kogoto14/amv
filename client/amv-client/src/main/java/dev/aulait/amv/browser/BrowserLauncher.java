@@ -22,12 +22,17 @@ public class BrowserLauncher {
   }
 
   public void open() {
+    open(browserUrl);
+  }
+
+  public void open(String url) {
+    String targetUrl = Objects.requireNonNull(url, "url");
     if (isDevContainer()) {
-      exec("code", "--openExternal", browserUrl);
+      exec("code", "--openExternal", targetUrl);
       return;
     }
     try {
-      Desktop.getDesktop().browse(new URI(browserUrl));
+      Desktop.getDesktop().browse(new URI(targetUrl));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (URISyntaxException e) {

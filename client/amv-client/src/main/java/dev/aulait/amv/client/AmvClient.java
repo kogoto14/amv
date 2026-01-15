@@ -2,6 +2,7 @@ package dev.aulait.amv.client;
 
 import dev.aulait.amv.async.AsyncProcessMonitor;
 import dev.aulait.amv.browser.BrowserLauncher;
+import dev.aulait.amv.browser.URLBuilder;
 import dev.aulait.amv.http.CodebaseRegistryClient;
 import java.net.http.HttpResponse;
 import java.util.Optional;
@@ -11,6 +12,7 @@ public class AmvClient {
   private final AsyncProcessMonitor analysisMonitor;
   private final CodebaseRegistryClient registryClient;
   private final BrowserLauncher browserLauncher;
+  private URLBuilder urlBuilder;
 
   private String apiBaseUrl = "http://localhost:8081";
 
@@ -20,6 +22,7 @@ public class AmvClient {
     this.registryClient = new CodebaseRegistryClient(apiBaseUrl);
     this.analysisMonitor = AsyncProcessMonitor.withDefaults(registryClient::fetchAnalysisStatus);
     this.browserLauncher = new BrowserLauncher(browserUrl);
+    this.urlBuilder = new URLBuilder(browserUrl);
   }
 
   public void setApiBaseUrl(String apiBaseUrl) {
@@ -30,6 +33,7 @@ public class AmvClient {
   public void setBrowserUrl(String browserUrl) {
     this.browserUrl = browserUrl;
     browserLauncher.setBrowserUrl(browserUrl);
+    this.urlBuilder = new URLBuilder(browserUrl);
   }
 
   public static void main(String[] args) {
@@ -46,7 +50,8 @@ public class AmvClient {
 
     analysisMonitor.waitUntilCompleted(codebaseId);
 
-    // browserLauncher.open();;
+    String diagramUrl = urlBuilder.buildClassDiagramUrl(qualifiedTypeName);
+    browserLauncher.open(diagramUrl);
   }
 
   private Optional<String> findRegisteredCodebaseId(String codebaseName) {
