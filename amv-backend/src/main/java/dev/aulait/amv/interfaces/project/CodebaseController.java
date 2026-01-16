@@ -5,7 +5,6 @@ import dev.aulait.amv.domain.project.CodebaseAggregate;
 import dev.aulait.amv.domain.project.CodebaseEntity;
 import dev.aulait.amv.domain.project.CodebaseFacade;
 import dev.aulait.amv.domain.project.CodebaseService;
-import dev.aulait.amv.domain.project.ProjectService;
 import dev.aulait.sqb.SearchCriteria;
 import dev.aulait.sqb.SearchResult;
 import jakarta.validation.Valid;
@@ -27,7 +26,6 @@ public class CodebaseController {
 
   private final CodebaseService codebaseService;
   private final CodebaseFactory codebaseFactory;
-  private final ProjectService projectService;
   private final CodebaseFacade codebaseFacade;
 
   static final String CODEBASE_PATH = "codebases";
